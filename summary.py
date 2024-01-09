@@ -69,6 +69,7 @@ async def get_summary():
                         'weekly_score': round(weekly_score, 2),
                         'monthly_score': round(monthly_score, 2)
                     })
+        result.sort(key=lambda x: x['monthly_score'], reverse=True)
         return result
     except Exception as e:
         print(e)
