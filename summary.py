@@ -16,11 +16,8 @@ async def get_summary():
 
     result = []
 
-    print(USERS)
-
     try:    
         for user in USERS:
-            print(f"current user: {user['name']}")
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"https://codeforces.com/api/user.status?handle={user['username']}&from=1&count=400") as resp:
                     data = await resp.json()
@@ -38,11 +35,18 @@ async def get_summary():
 
                         problem = submission['problem']
 
+                        rating = None
+
+                        if 'rating' not in problem:
+                            rating = 1000
+                        else:
+                            rating = problem['rating']
+
                         entry = {
                             'problem': problem['name'],
                             'contest': problem['contestId'],
                             'timestamp': submission['creationTimeSeconds'],
-                            'rating': problem['rating']
+                            'rating': rating
                         }
 
                         if submission['creationTimeSeconds'] >= today and entry not in unique_daily_submissions:
@@ -57,7 +61,6 @@ async def get_summary():
                     monthly_score = 0
 
                     for submission in unique_daily_submissions:
-                        print('here is a submission: ', submission)
                         daily_score += ((submission['rating'] / 100)**5)/(10**4)
                     for submission in unique_weekly_submissions:
                         weekly_score += ((submission['rating'] / 100)**5)/(10**4)
@@ -72,5 +75,6 @@ async def get_summary():
         result.sort(key=lambda x: x['monthly_score'], reverse=True)
         return result
     except Exception as e:
-        print(e)
+        print(f'Error happened: {e}')
         return e
+        

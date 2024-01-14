@@ -5,8 +5,11 @@ from telegram.ext import CommandHandler, Application, MessageHandler, ContextTyp
 from helper import get_today_timestamp
 from summary import get_summary
 
+from dotenv import load_dotenv
+load_dotenv()
+
 BOT_TOKEN: Final = os.getenv('BOT_TOKEN')
-BOT_USERNAME: Final = "@bugwhisperers_bot"
+BOT_USERNAME: Final = os.getenv('BOT_USERNAME')
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text('Welcome!')
@@ -17,7 +20,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:    
         resp = await get_summary()
-        print(resp)
 
         ans = ''
         for data in resp:
@@ -28,7 +30,7 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ans += '............................................\n\n'
         await update.message.reply_text(ans)
     except Exception as e:
-        print(e)
+        print(f'Error in the main file: {e}')
         await update.message.reply_text('Error!')
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,3 +54,4 @@ if __name__ == '__main__':
 
     print('polling...')
     app.run_polling(poll_interval=5)
+    
