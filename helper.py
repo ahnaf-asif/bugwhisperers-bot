@@ -20,3 +20,4 @@ def get_start_of_month_timestamp():
     start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_of_month_timestamp = start_of_month.timestamp()
     return int(start_of_month_timestamp)
+    
