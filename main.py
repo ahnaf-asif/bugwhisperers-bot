@@ -47,13 +47,23 @@ async def summary_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f'Error in the main file: {e}')
         await update.message.reply_text('Error!')
 
+def status_str(user, submissions):
+    ans = f'\n\nUser {user.name}:\n'
+    ans += f'Number of accepted submissions: {len(submissions)}\n'
+    cnt = 1
+    for submission in submissions:
+        ans += f'{cnt}. {submission["problem"]} (https://codeforces.com/contest/{submission["contest"]}/problem/{submission["problem_index"]})\n'
+        cnt += 1
+    ans += '....................................................\n\n'
+    return ans
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type = update.message.chat.type 
     text = update.message.text
 
-    if BOT_USERNAME in text and 'summary' in text.lower():
+    if (BOT_USERNAME in text or message_type == 'private' ) and 'summary' in text.lower():
         await summary_command(update, context)
-    else:
+    elif BOT_USERNAME in text or message_type == 'private':
         users = []
         
         if ahnaf_exists(text):
@@ -63,54 +73,31 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if shafin_exists(text):
             users.append(User('_blaNk_', 'Shafin Alam'))
 
-        if 'daily_status' in text.lower():
-            ans = ''
-            
-            for user in users:
-                submissions = await user.get_daily_submissions()
+        if len(users) == 0:
+            return
 
-                ans += f'\n\nUser {user.name}:\n'
-                ans += f'Number of accepted submissions: {len(submissions)}\n'
-                cnt = 1 
-                for submission in submissions:
-                    ans += f'{cnt}. {submission["problem"]} (https://codeforces.com/contest/{submission["contest"]}/problem/{submission["problem_index"]})\n'
-                    cnt += 1
-                ans += '....................................................\n\n'
-            
+        for user in users:
+            await user.set_submissions()
+
+        ans = ''
+
+        if 'daily_status' in text.lower():
+            for user in users:
+                ans += status_str(user, user.daily_submissions)
             await update.message.reply_text(ans)
         elif 'weekly_status' in text.lower():
-            ans = ''
-            
             for user in users:
-                submissions = await user.get_weekly_submissions()
-                
-                ans += f'\n\nUser {user.name}:\n'
-                ans += f'Number of accepted submissions: {len(submissions)}\n'
-                cnt = 1
-                for submission in submissions:
-                    ans += f'\n{cnt}. {submission["problem"]} (https://codeforces.com/contest/{submission["contest"]}/problem/{submission["problem_index"]})\n'
-                    cnt += 1
-                ans += '....................................................\n\n'
-            
+                ans += status_str(user, user.weekly_submissions)
             await update.message.reply_text(ans)
         elif 'monthly_status' in text.lower():
-            ans = ''
-
             for user in users:
-                submissions = await user.get_monthly_submissions()
-                
-                ans += f'\n\nUser {user.name}:\n'
-                ans += f'Number of accepted submissions: {len(submissions)}\n'
-                cnt = 1
-                for submission in submissions:
-                    ans += f'{cnt}. {submission["problem"]} (https://codeforces.com/contest/{submission["contest"]}/problem/{submission["problem_index"]})\n'
-                    cnt += 1
-                ans += '....................................................\n\n'
-            
+                ans += status_str(user, user.monthly_submissions)
             await update.message.reply_text(ans)
         else:
             return
-
+    else:
+        return
+        
 if __name__ == '__main__':
     print('starting bot...')
     app = Application.builder().token(BOT_TOKEN).build()

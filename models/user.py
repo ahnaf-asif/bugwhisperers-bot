@@ -9,22 +9,18 @@ class User:
         self.weekly_submissions = []
         self.monthly_submissions = []
 
-    async def filter_submissions(self, start_time, filter_type):
-        
-        submission_count = 50
-        if filter_type == 'weekly':
-            submission_count = 200
-        elif filter_type == 'monthly':
-            submission_count = 600
-        
+    async def set_submissions(self):
+        today = get_today_timestamp()
+        this_week = get_start_of_week_timestamp()
+        this_month = get_start_of_month_timestamp()
+
         try:
-            submissions = await get_user_submissions_by_count(self.username, submission_count)
-            unique_submissions = []
+            submissions = await get_user_submissions_by_count(self.username, 400)
 
             for submission in submissions:
                 if submission['verdict'] != 'OK':
                     continue
-                if submission['creationTimeSeconds'] < start_time:
+                if submission['creationTimeSeconds'] < this_month:
                     break
 
                 problem = submission['problem']
@@ -43,59 +39,37 @@ class User:
                     'rating': rating
                 }
 
-                if entry not in unique_submissions:
-                    unique_submissions.append(entry)
-            return unique_submissions
+                if entry not in self.daily_submissions and entry['timestamp'] >= today:
+                    self.daily_submissions.append(entry)
+                if entry not in self.weekly_submissions and entry['timestamp'] >= this_week:
+                    self.weekly_submissions.append(entry)
+                if entry not in self.monthly_submissions and entry['timestamp'] >= this_month:
+                    self.monthly_submissions.append(entry)
+            
         except Exception as e:
-            print(f'Error in models/user.py: {e}')
-            return e
-
-    async def get_daily_submissions(self):
-        today = get_today_timestamp()
-        
-        try:
-            return await self.filter_submissions(today, 'daily')
-        except Exception as e:
-            print(f'Error in models/user.py: {e}')
-            return e
-
-    async def get_weekly_submissions(self):
-        this_week = get_start_of_week_timestamp()
-        
-        try:
-            return await self.filter_submissions(this_week, 'weekly')
-        except Exception as e:
-            print(f'Error in models/user.py: {e}')
-            return e
-
-    async def get_monthly_submissions(self):
-        this_month = get_start_of_month_timestamp()
-        
-        try:
-            return await self.filter_submissions(this_month, 'monthly')
-        except Exception as e:
-            print(f'Error in models/user.py: {e}')
-            return e
+            print(f'Error in models/user.py/set_submissions: {e}')
 
     async def get_summary(self):
-        self.daily_submissions = await self.get_daily_submissions()
-        self.weekly_submissions = await self.get_weekly_submissions()
-        self.monthly_submissions = await self.get_monthly_submissions()
+        try:
+            await self.set_submissions()
 
-        daily_score = 0
-        weekly_score = 0
-        monthly_score = 0
+            daily_score = 0
+            weekly_score = 0
+            monthly_score = 0
 
-        for submission in self.daily_submissions:
-            daily_score += ((submission['rating'] / 100)**5)/(10**4)
-        for submission in self.weekly_submissions:
-            weekly_score += ((submission['rating'] / 100)**5)/(10**4)
-        for submission in self.monthly_submissions:
-            monthly_score += ((submission['rating'] / 100)**5)/(10**4)
-        
-        return {
-            'name': self.name,
-            'daily_score': round(daily_score, 2),
-            'weekly_score': round(weekly_score, 2),
-            'monthly_score': round(monthly_score, 2)
-        }
+            for submission in self.daily_submissions:
+                daily_score += ((submission['rating'] / 100)**5)/(10**4)
+            for submission in self.weekly_submissions:
+                weekly_score += ((submission['rating'] / 100)**5)/(10**4)
+            for submission in self.monthly_submissions:
+                monthly_score += ((submission['rating'] / 100)**5)/(10**4)
+            
+            return {
+                'name': self.name,
+                'daily_score': round(daily_score, 2),
+                'weekly_score': round(weekly_score, 2),
+                'monthly_score': round(monthly_score, 2)
+            }
+        except Exception as e:
+            print(f'Error in models/user.py/get_summary: {e}')
+            return e
